@@ -17,9 +17,7 @@ A modern, full-stack Learning Management System (LMS) built with React, Node.js,
 - [Usage](#-usage)
 - [API Documentation](#-api-documentation)
 - [User Roles](#-user-roles)
-- [Screenshots](#-screenshots)
-- [Contributing](#-contributing)
-- [License](#-license)
+- [Development](#-development)
 
 ## ✨ Features
 
@@ -190,17 +188,6 @@ npm start
 - **Backend API**: http://localhost:5000
 - **API Documentation**: http://localhost:5000/api
 
-### Default Test Accounts
-After seeding the database, you can use these accounts:
-
-| Role | Email | Password |
-|------|-------|----------|
-| Student | john@example.com | password123 |
-| Student | jane@example.com | password123 |
-| Student | mike@example.com | password123 |
-| Instructor | sarah@example.com | password123 |
-| Instructor | david@example.com | password123 |
-| Admin | admin@example.com | password123 |
 
 ## 📚 API Documentation
 
@@ -260,19 +247,6 @@ GET  /api/assignments/:id/submissions  # Get submissions
 - **Delete users**
 - **Monitor system activity**
 
-## 📱 Screenshots
-
-### Dashboard
-![Dashboard](https://via.placeholder.com/800x400/4F46E5/FFFFFF?text=Dashboard+View)
-
-### Course Listing
-![Courses](https://via.placeholder.com/800x400/059669/FFFFFF?text=Course+Listing)
-
-### Course Detail
-![Course Detail](https://via.placeholder.com/800x400/DC2626/FFFFFF?text=Course+Detail)
-
-### User Profile
-![Profile](https://via.placeholder.com/800x400/7C3AED/FFFFFF?text=User+Profile)
 
 ## 🔧 Development
 
@@ -280,12 +254,6 @@ GET  /api/assignments/:id/submissions  # Get submissions
 1. **Backend**: Add routes in `/Backend/routes/`
 2. **Frontend**: Add pages in `/Frontend/src/pages/`
 3. **Components**: Add reusable components in `/Frontend/src/components/`
-
-### Database Seeding
-```bash
-cd Backend
-npm run seed  # Seed with sample data
-```
 
 ### Code Quality
 ```bash
@@ -298,42 +266,8 @@ cd Backend
 npm run lint
 ```
 
-## 🤝 Contributing
-
-1. **Fork the repository**
-2. **Create a feature branch** (`git checkout -b feature/amazing-feature`)
-3. **Commit your changes** (`git commit -m 'Add amazing feature'`)
-4. **Push to the branch** (`git push origin feature/amazing-feature`)
-5. **Open a Pull Request**
-
-### Development Guidelines
-- **Follow React best practices**
-- **Use meaningful commit messages**
-- **Test your changes thoroughly**
-- **Update documentation as needed**
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🙏 Acknowledgments
-
-- **React Team** for the amazing framework
-- **Express.js Team** for the robust backend framework
-- **MongoDB Team** for the flexible database
-- **Tailwind CSS** for the utility-first CSS framework
-- **Font Awesome** for the comprehensive icon library
-
-## 📞 Support
-
-If you have any questions or need help with the project:
-
-- **Create an issue** on GitHub
-- **Check the documentation** in the `/docs` folder
-- **Review the API endpoints** in the backend routes
-
 ---
 
-**Built with ❤️ by the EduNexus Team**
+**EduNexus - Learning Management System**
 
-*Empowering education through technology*
+*Built with React, Node.js, and MongoDB*
