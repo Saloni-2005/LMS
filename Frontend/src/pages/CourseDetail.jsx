@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import API from '../api/axios';
 import NavBar from '../components/NavBar';
+import RatingModal from '../components/RatingModal';
 import { useAuth } from '../context/AuthContext';
 
 export default function CourseDetail(){
@@ -10,6 +11,10 @@ export default function CourseDetail(){
   const [course, setCourse] = useState(null);
   const [lectures, setLectures] = useState([]);
   const [discussions, setDiscussions] = useState([]);
+  const [courseStats, setCourseStats] = useState(null);
+  const [userProgress, setUserProgress] = useState(null);
+  const [ratings, setRatings] = useState([]);
+  const [showRatingModal, setShowRatingModal] = useState(false);
   const [msg, setMsg] = useState('');
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('lectures');
@@ -19,10 +24,32 @@ export default function CourseDetail(){
       setLoading(true);
       const res = await API.get(`/courses/${id}`);
       setCourse(res.data);
+      
+      // Fetch course stats
+      const statsRes = await API.get(`/courses/${id}/stats`);
+      setCourseStats(statsRes.data);
+      
+      // Fetch user progress if enrolled
+      try {
+        const progressRes = await API.get(`/courses/${id}/progress`);
+        setUserProgress(progressRes.data);
+      } catch (err) {
+        // User might not be enrolled, that's okay
+        console.log('Could not fetch progress:', err.response?.data?.message);
+      }
+      
       const l = await API.get(`/lectures/course/${id}`);
       setLectures(l.data);
       const d = await API.get(`/discussions/${id}`);
       setDiscussions(d.data);
+      
+      // Fetch course ratings
+      try {
+        const ratingsRes = await API.get(`/courses/${id}/ratings`);
+        setRatings(ratingsRes.data.ratings);
+      } catch (err) {
+        console.log('Could not fetch ratings:', err.response?.data?.message);
+      }
     } catch(err){ 
       console.error(err); 
     } finally {
@@ -85,15 +112,15 @@ export default function CourseDetail(){
                 </div>
                 <div className="flex items-center">
                   <i className="fas fa-users mr-2"></i>
-                  <span>1,234 students</span>
+                  <span>{courseStats?.enrollmentCount || 0} students</span>
                 </div>
                 <div className="flex items-center">
                   <i className="fas fa-clock mr-2"></i>
-                  <span>8 hours</span>
+                  <span>{courseStats?.duration || 'N/A'}</span>
                 </div>
                 <div className="flex items-center">
                   <i className="fas fa-star text-yellow-400 mr-1"></i>
-                  <span>4.8 (234 reviews)</span>
+                  <span>{courseStats?.averageRating || 0} ({courseStats?.totalReviews || 0} reviews)</span>
                 </div>
               </div>
             </div>
@@ -102,9 +129,9 @@ export default function CourseDetail(){
               <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl p-6 text-white">
                 <h3 className="text-lg font-semibold mb-2">Course Progress</h3>
                 <div className="w-full bg-white bg-opacity-20 rounded-full h-2 mb-2">
-                  <div className="bg-white h-2 rounded-full" style={{width: '65%'}}></div>
+                  <div className="bg-white h-2 rounded-full" style={{width: `${userProgress?.progress || 0}%`}}></div>
                 </div>
-                <p className="text-sm">65% Complete</p>
+                <p className="text-sm">{userProgress?.progress || 0}% Complete</p>
               </div>
             </div>
           </div>
@@ -135,6 +162,17 @@ export default function CourseDetail(){
               >
                 <i className="fas fa-comments mr-2"></i>
                 Discussions ({discussions.length})
+              </button>
+              <button
+                onClick={() => setActiveTab('ratings')}
+                className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'ratings'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                <i className="fas fa-star mr-2"></i>
+                Ratings ({ratings.length})
               </button>
               {user?.role === 'instructor' && (
                 <button
@@ -260,6 +298,66 @@ export default function CourseDetail(){
               </div>
             )}
 
+            {/* Ratings Tab */}
+            {activeTab === 'ratings' && (
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900">Course Ratings & Reviews</h3>
+                  {user?.role === 'student' && course?.students?.includes(user._id) && (
+                    <button
+                      onClick={() => setShowRatingModal(true)}
+                      className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                    >
+                      <i className="fas fa-star mr-2"></i>
+                      Rate Course
+                    </button>
+                  )}
+                </div>
+                
+                {ratings.length === 0 ? (
+                  <div className="text-center py-8">
+                    <i className="fas fa-star text-4xl text-gray-400 mb-4"></i>
+                    <p className="text-gray-600">No ratings yet. Be the first to rate this course!</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {ratings.map((rating, index) => (
+                      <div key={index} className="bg-gray-50 rounded-lg p-4">
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="flex items-center">
+                            <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                              <i className="fas fa-user text-blue-600 text-sm"></i>
+                            </div>
+                            <div className="ml-3">
+                              <p className="font-medium text-gray-900">{rating.user?.name || 'Anonymous'}</p>
+                              <div className="flex items-center">
+                                {[1, 2, 3, 4, 5].map((star) => (
+                                  <span
+                                    key={star}
+                                    className={`text-sm ${
+                                      star <= rating.rating ? 'text-yellow-400' : 'text-gray-300'
+                                    }`}
+                                  >
+                                    ★
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                          <span className="text-sm text-gray-500">
+                            {new Date(rating.createdAt).toLocaleDateString()}
+                          </span>
+                        </div>
+                        {rating.review && (
+                          <p className="text-gray-700 mt-2">{rating.review}</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Instructor Tools Tab */}
             {activeTab === 'instructor' && user?.role === 'instructor' && (
               <div>
@@ -287,6 +385,17 @@ export default function CourseDetail(){
           </div>
         </div>
       </div>
+      
+      {/* Rating Modal */}
+      <RatingModal
+        courseId={id}
+        isOpen={showRatingModal}
+        onClose={() => setShowRatingModal(false)}
+        onRatingSubmitted={() => {
+          // Refresh ratings after submission
+          fetch();
+        }}
+      />
     </div>
   );
 }

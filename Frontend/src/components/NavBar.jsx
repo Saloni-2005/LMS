@@ -6,7 +6,12 @@ export default function NavBar(){
   const { user, logout } = useAuth();
   const nav = useNavigate();
 
-  const handleLogout = () => { logout(); nav('/login'); };
+  const handleLogout = () => {
+    if (window.confirm('Are you sure you want to logout?')) {
+      logout(); 
+      nav('/login');
+    }
+  };
 
   return (
     <nav className="bg-white shadow-lg border-b border-gray-200">
@@ -23,6 +28,11 @@ export default function NavBar(){
               <Link to="/courses" className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors">
                 <i className="fas fa-book mr-2"></i>Courses
               </Link>
+              {user?.role === 'student' && (
+                <Link to="/my-courses" className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors">
+                  <i className="fas fa-graduation-cap mr-2"></i>My Courses
+                </Link>
+              )}
               {user?.role === 'instructor' && (
                 <Link to="/create-course" className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors">
                   <i className="fas fa-plus mr-2"></i>Create Course
@@ -38,7 +48,7 @@ export default function NavBar(){
           <div className="flex items-center space-x-4">
             {user ? (
               <>
-                <div className="flex items-center space-x-3">
+                <Link to="/profile" className="flex items-center space-x-3 hover:bg-gray-50 rounded-lg p-2 transition-colors">
                   <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
                     <i className="fas fa-user text-blue-600 text-sm"></i>
                   </div>
@@ -46,7 +56,7 @@ export default function NavBar(){
                     <p className="text-sm font-medium text-gray-900">{user.name}</p>
                     <p className="text-xs text-gray-500 capitalize">{user.role}</p>
                   </div>
-                </div>
+                </Link>
                 <button 
                   onClick={handleLogout}
                   className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center space-x-2"

@@ -6,6 +6,8 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import Courses from './pages/Courses';
+import MyCourses from './pages/MyCourses';
+import Profile from './pages/Profile';
 import CourseDetail from './pages/CourseDetail';
 import CreateCourse from './pages/CreateCourse';
 import UploadLecture from './pages/UploadLecture';
@@ -29,6 +31,8 @@ export default function App(){
           <Route path="/register" element={<Register/>}/>
           <Route path="/" element={<PrivateRoute><Dashboard/></PrivateRoute>} />
           <Route path="/courses" element={<PrivateRoute><Courses/></PrivateRoute>} />
+          <Route path="/my-courses" element={<PrivateRoute roles={['student']}><MyCourses/></PrivateRoute>} />
+          <Route path="/profile" element={<PrivateRoute><Profile/></PrivateRoute>} />
           <Route path="/courses/:id" element={<PrivateRoute><CourseDetail/></PrivateRoute>} />
           <Route path="/create-course" element={<PrivateRoute roles={['instructor']}><CreateCourse/></PrivateRoute>} />
           <Route path="/upload-lecture/:courseId" element={<PrivateRoute roles={['instructor']}><UploadLecture/></PrivateRoute>} />

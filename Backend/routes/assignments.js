@@ -50,4 +50,45 @@ router.get('/:assignmentId/submissions', auth, permit('instructor','admin'), asy
   res.json(subs);
 });
 
+// get user's assignments
+router.get('/user/assignments', auth, async (req,res) => {
+  try {
+    const Course = require('../models/Course');
+    
+    // Get user's enrolled courses
+    const enrolledCourses = await Course.find({ students: req.user._id });
+    const courseIds = enrolledCourses.map(course => course._id);
+    
+    // Get assignments for enrolled courses
+    const assignments = await Assignment.find({ course: { $in: courseIds } })
+      .populate('course', 'title')
+      .sort({ dueDate: 1 });
+    
+    // Get user's submissions for these assignments
+    const assignmentIds = assignments.map(a => a._id);
+    const submissions = await Submission.find({ 
+      assignment: { $in: assignmentIds }, 
+      student: req.user._id 
+    });
+    
+    // Create a map of submissions for quick lookup
+    const submissionMap = {};
+    submissions.forEach(sub => {
+      submissionMap[sub.assignment.toString()] = sub;
+    });
+    
+    // Add submission status to assignments
+    const assignmentsWithStatus = assignments.map(assignment => ({
+      ...assignment.toObject(),
+      isSubmitted: !!submissionMap[assignment._id.toString()],
+      submission: submissionMap[assignment._id.toString()] || null
+    }));
+    
+    res.json(assignmentsWithStatus);
+  } catch (error) {
+    console.error('Error fetching user assignments:', error);
+    res.status(500).json({ message: 'Error fetching assignments' });
+  }
+});
+
 module.exports = router;
