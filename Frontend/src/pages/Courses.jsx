@@ -23,10 +23,9 @@ export default function Courses(){
       if (sort) params.append('sort', sort);
       
       const res = await API.get(`/courses?${params.toString()}`);
-      setCourses(res.data);
+      setCourses(res.data.courses || res.data);
       
-      // Fetch stats for each course
-      const statsPromises = res.data.map(course => 
+      const statsPromises = (res.data.courses || res.data).map(course => 
         API.get(`/courses/${course._id}/stats`).catch(() => null)
       );
       const statsResults = await Promise.all(statsPromises);
@@ -34,7 +33,7 @@ export default function Courses(){
       const stats = {};
       statsResults.forEach((result, index) => {
         if (result && result.data) {
-          stats[res.data[index]._id] = result.data;
+          stats[(res.data.courses || res.data)[index]._id] = result.data;
         }
       });
       setCourseStats(stats);

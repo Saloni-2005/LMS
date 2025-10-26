@@ -24,17 +24,28 @@ export default function CreateCourse(){
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-purple-50">
       <NavBar />
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Create New Course</h1>
-          <p className="text-gray-600">Design and launch your course to share knowledge with students</p>
+          <div className="flex items-center mb-4">
+            <div className="bg-indigo-100 rounded-full p-3 mr-4">
+              <i className="fas fa-graduation-cap text-indigo-600 text-2xl"></i>
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Create New Course</h1>
+              <p className="text-gray-600">Design and launch your course to share knowledge with students</p>
+            </div>
+          </div>
         </div>
 
         {/* Form */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
+        <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
+          <div className="bg-gradient-to-r from-indigo-600 to-purple-600 px-8 py-6">
+            <h2 className="text-xl font-bold text-white">Course Information</h2>
+          </div>
+          <div className="p-8">
           <form onSubmit={handle} className="space-y-6">
             <div>
               <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">
@@ -46,7 +57,7 @@ export default function CreateCourse(){
                 value={title}
                 onChange={e=>setTitle(e.target.value)}
                 placeholder="Enter an engaging course title"
-                className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                 required
               />
             </div>
@@ -61,7 +72,7 @@ export default function CreateCourse(){
                 onChange={e=>setDescription(e.target.value)}
                 placeholder="Describe what students will learn in this course"
                 rows="6"
-                className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none"
                 required
               />
             </div>
@@ -93,7 +104,7 @@ export default function CreateCourse(){
               <button
                 type="submit"
                 disabled={loading || !title.trim() || !description.trim()}
-                className="px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-lg font-medium transition-colors flex items-center"
+                className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 text-white rounded-lg font-medium transition-colors flex items-center"
               >
                 {loading ? (
                   <>
@@ -109,28 +120,23 @@ export default function CreateCourse(){
               </button>
             </div>
           </form>
+          </div>
         </div>
 
         {/* Tips */}
-        <div className="mt-8 bg-blue-50 rounded-xl p-6">
-          <h3 className="text-lg font-medium text-blue-900 mb-3">
-            <i className="fas fa-lightbulb mr-2"></i>
-            Course Creation Tips
-          </h3>
-          <ul className="space-y-2 text-blue-800">
-            <li className="flex items-start">
-              <i className="fas fa-check-circle mr-2 mt-1"></i>
-              <span>Choose a clear, descriptive title that tells students what they'll learn</span>
-            </li>
-            <li className="flex items-start">
-              <i className="fas fa-check-circle mr-2 mt-1"></i>
-              <span>Write a detailed description including learning objectives and prerequisites</span>
-            </li>
-            <li className="flex items-start">
-              <i className="fas fa-check-circle mr-2 mt-1"></i>
-              <span>You can add lectures and assignments after creating the course</span>
-            </li>
-          </ul>
+        <div className="mt-6 bg-indigo-50 border border-indigo-200 rounded-lg p-6">
+          <div className="flex items-start">
+            <i className="fas fa-lightbulb text-indigo-600 mr-3 mt-1"></i>
+            <div>
+              <h4 className="font-medium text-indigo-900 mb-2">Course Creation Tips</h4>
+              <ul className="text-sm text-indigo-800 space-y-1">
+            <li>• Choose a clear, descriptive title that tells students what they'll learn</li>
+            <li>• Write a detailed description including learning objectives and prerequisites</li>
+            <li>• You can add lectures and assignments after creating the course</li>
+            <li>• Consider adding appropriate category and difficulty level settings</li>
+              </ul>
+            </div>
+          </div>
         </div>
       </div>
     </div>

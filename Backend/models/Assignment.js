@@ -8,4 +8,8 @@ const assignmentSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now }
 });
 
+assignmentSchema.index({ course: 1 });
+assignmentSchema.index({ dueDate: 1 });
+assignmentSchema.index({ createdAt: -1 });
+
 module.exports = mongoose.model('Assignment', assignmentSchema);

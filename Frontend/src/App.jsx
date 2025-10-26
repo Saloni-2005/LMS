@@ -7,6 +7,9 @@ import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import Courses from './pages/Courses';
 import MyCourses from './pages/MyCourses';
+import Assignments from './pages/Assignments';
+import Certificates from './pages/Certificates';
+import Submissions from './pages/Submissions';
 import Profile from './pages/Profile';
 import CourseDetail from './pages/CourseDetail';
 import CreateCourse from './pages/CreateCourse';
@@ -32,6 +35,9 @@ export default function App(){
           <Route path="/" element={<PrivateRoute><Dashboard/></PrivateRoute>} />
           <Route path="/courses" element={<PrivateRoute><Courses/></PrivateRoute>} />
           <Route path="/my-courses" element={<PrivateRoute roles={['student']}><MyCourses/></PrivateRoute>} />
+          <Route path="/assignments" element={<PrivateRoute roles={['student']}><Assignments/></PrivateRoute>} />
+          <Route path="/certificates" element={<PrivateRoute roles={['student']}><Certificates/></PrivateRoute>} />
+          <Route path="/submissions" element={<PrivateRoute roles={['instructor']}><Submissions/></PrivateRoute>} />
           <Route path="/profile" element={<PrivateRoute><Profile/></PrivateRoute>} />
           <Route path="/courses/:id" element={<PrivateRoute><CourseDetail/></PrivateRoute>} />
           <Route path="/create-course" element={<PrivateRoute roles={['instructor']}><CreateCourse/></PrivateRoute>} />

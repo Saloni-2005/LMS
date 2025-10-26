@@ -3,16 +3,24 @@ const router = express.Router();
 const auth = require('../middleware/auth');
 const permit = require('../middleware/roles');
 const Course = require('../models/Course');
+const AppError = require('../utils/appError');
+const catchAsync = require('../utils/catchAsync');
+const cache = require('../utils/cache');
 const dotenv = require('dotenv');
 dotenv.config();
 
-// list all courses with search, filter, and sort
-router.get('/', auth, async (req,res) => {
-  const { search, category, sort, level } = req.query;
+router.get('/', auth, catchAsync(async (req, res, next) => {
+  const { search, category, sort, level, page = 1, limit = 10 } = req.query;
+  
+  const cacheKey = `courses:${JSON.stringify({ search, category, sort, level, page, limit })}`;
+  
+  const cachedData = await cache.get(cacheKey);
+  if (cachedData) {
+    return res.json(cachedData);
+  }
   
   let query = {};
   
-  // Search functionality
   if (search) {
     query.$or = [
       { title: { $regex: search, $options: 'i' } },
@@ -20,17 +28,14 @@ router.get('/', auth, async (req,res) => {
     ];
   }
   
-  // Category filter
   if (category && category !== 'All Categories') {
     query.category = category;
   }
   
-  // Level filter
   if (level && level !== 'All Levels') {
     query.level = level;
   }
   
-  // Sort functionality
   let sortOption = {};
   switch (sort) {
     case 'Newest':
@@ -52,67 +57,167 @@ router.get('/', auth, async (req,res) => {
       sortOption = { createdAt: -1 };
   }
   
+  const skip = (parseInt(page) - 1) * parseInt(limit);
+  
   const courses = await Course.find(query)
     .populate('instructor','name email')
-    .sort(sortOption);
+    .sort(sortOption)
+    .skip(skip)
+    .limit(parseInt(limit))
+    .lean();
     
-  res.json(courses);
-});
+  const total = await Course.countDocuments(query);
+  
+  const result = {
+    courses,
+    pagination: {
+      currentPage: parseInt(page),
+      totalPages: Math.ceil(total / parseInt(limit)),
+      totalCourses: total,
+      hasNext: skip + courses.length < total,
+      hasPrev: parseInt(page) > 1
+    }
+  };
+  
+  await cache.set(cacheKey, result, 300);
+    
+  res.json(result);
+}));
 
-// get single
-router.get('/:id', auth, async (req,res) => {
-  const course = await Course.findById(req.params.id).populate('instructor','name email');
-  if(!course) return res.status(404).json({ message: 'Course not found' });
+router.get('/:id', auth, catchAsync(async (req, res, next) => {
+  const cacheKey = `course:${req.params.id}`;
+  
+  const cachedCourse = await cache.get(cacheKey);
+  if (cachedCourse) {
+    return res.json(cachedCourse);
+  }
+  
+  const course = await Course.findById(req.params.id)
+    .populate('instructor','name email')
+    .lean();
+    
+  if (!course) {
+    return next(new AppError('Course not found', 404));
+  }
+  
+  await cache.set(cacheKey, course, 600);
+  
   res.json(course);
-});
+}));
 
-// create course (instructor)
-router.post('/', auth, permit('instructor'), async (req,res) => {
-  const { title, description } = req.body;
-  const course = new Course({ title, description, instructor: req.user._id });
+router.post('/', auth, permit('instructor'), catchAsync(async (req, res, next) => {
+  const { title, description, category, level, duration, price } = req.body;
+  
+  if (!title || !description) {
+    return next(new AppError('Title and description are required', 400));
+  }
+  
+  const course = new Course({ 
+    title, 
+    description, 
+    category,
+    level,
+    duration,
+    price,
+    instructor: req.user._id 
+  });
+  
   await course.save();
-  res.json(course);
-});
+  
+  await cache.delPattern('courses:*');
+  
+  res.status(201).json(course);
+}));
 
-// edit (instructor or admin)
-router.put('/:id', auth, permit('instructor','admin'), async (req,res) => {
+router.put('/:id', auth, permit('instructor','admin'), catchAsync(async (req, res, next) => {
   const course = await Course.findById(req.params.id);
-  if(!course) return res.status(404).json({ message: 'Not found' });
-  if(req.user.role !== 'admin' && !course.instructor.equals(req.user._id)) return res.status(403).json({ message: 'Forbidden' });
+  
+  if (!course) {
+    return next(new AppError('Course not found', 404));
+  }
+  
+  if (req.user.role !== 'admin' && !course.instructor.equals(req.user._id)) {
+    return next(new AppError('Not authorized to edit this course', 403));
+  }
+  
   Object.assign(course, req.body);
   await course.save();
+  
+  await cache.del(`course:${req.params.id}`);
+  await cache.delPattern('courses:*');
+  
   res.json(course);
-});
+}));
 
-// delete
-router.delete('/:id', auth, permit('instructor','admin'), async (req,res) => {
+router.delete('/:id', auth, permit('instructor','admin'), catchAsync(async (req, res, next) => {
   const course = await Course.findById(req.params.id);
-  if(!course) return res.status(404).json({ message: 'Not found' });
-  if(req.user.role !== 'admin' && !course.instructor.equals(req.user._id)) return res.status(403).json({ message: 'Forbidden' });
-  await course.remove();
-  res.json({ message: 'Deleted' });
-});
+  
+  if (!course) {
+    return next(new AppError('Course not found', 404));
+  }
+  
+  if (req.user.role !== 'admin' && !course.instructor.equals(req.user._id)) {
+    return next(new AppError('Not authorized to delete this course', 403));
+  }
+  
+  await Course.findByIdAndDelete(req.params.id);
+  
+  await cache.del(`course:${req.params.id}`);
+  await cache.delPattern('courses:*');
+  
+  res.json({ message: 'Course deleted successfully' });
+}));
 
-// enroll
-router.post('/:id/enroll', auth, permit('student'), async (req,res) => {
+router.post('/:id/enroll', auth, permit('student'), catchAsync(async (req, res, next) => {
   const course = await Course.findById(req.params.id);
-  if(!course) return res.status(404).json({ message: 'Course not found' });
-  if(course.students.includes(req.user._id)) return res.status(400).json({ message: 'Already enrolled' });
+  
+  if (!course) {
+    return next(new AppError('Course not found', 404));
+  }
+  
+  if (course.students.includes(req.user._id)) {
+    return next(new AppError('You are already enrolled in this course', 400));
+  }
+  
   course.students.push(req.user._id);
   await course.save();
-  res.json({ message: 'Enrolled' });
-});
+  
+  await cache.del(`course:${req.params.id}`);
+  await cache.delPattern('courses:*');
+  
+  res.json({ message: 'Successfully enrolled in course' });
+}));
 
-// get user's enrolled courses
-router.get('/user/enrolled', auth, async (req,res) => {
-  const courses = await Course.find({ students: req.user._id }).populate('instructor','name email');
+router.get('/user/enrolled', auth, catchAsync(async (req, res, next) => {
+  const cacheKey = `user:${req.user._id}:enrolled`;
+  
+  const cachedCourses = await cache.get(cacheKey);
+  if (cachedCourses) {
+    return res.json(cachedCourses);
+  }
+  
+  const courses = await Course.find({ students: req.user._id })
+    .populate('instructor','name email')
+    .lean();
+  
+  await cache.set(cacheKey, courses, 300);
+  
   res.json(courses);
-});
+}));
 
-// get course stats
-router.get('/:id/stats', auth, async (req,res) => {
+router.get('/:id/stats', auth, catchAsync(async (req, res, next) => {
+  const cacheKey = `course:${req.params.id}:stats`;
+  
+  const cachedStats = await cache.get(cacheKey);
+  if (cachedStats) {
+    return res.json(cachedStats);
+  }
+  
   const course = await Course.findById(req.params.id).populate('students');
-  if(!course) return res.status(404).json({ message: 'Course not found' });
+  
+  if (!course) {
+    return next(new AppError('Course not found', 404));
+  }
   
   const stats = {
     enrollmentCount: course.students.length,
@@ -122,89 +227,109 @@ router.get('/:id/stats', auth, async (req,res) => {
     category: course.category,
     level: course.level,
     price: course.price,
-    isNew: Date.now() - new Date(course.createdAt).getTime() < 7 * 24 * 60 * 60 * 1000 // New if created within 7 days
+    isNew: Date.now() - new Date(course.createdAt).getTime() < 7 * 24 * 60 * 60 * 1000
   };
   
+  await cache.set(cacheKey, stats, 600);
+  
   res.json(stats);
-});
+}));
 
-// get user's progress for a specific course
-router.get('/:id/progress', auth, async (req,res) => {
-  try {
-    const course = await Course.findById(req.params.id);
-    if(!course) return res.status(404).json({ message: 'Course not found' });
-    
-    // Check if user is enrolled
-    if(!course.students.includes(req.user._id)) {
-      return res.status(403).json({ message: 'Not enrolled in this course' });
-    }
-    
-    // For now, return a mock progress. In a real system, this would be calculated
-    // based on completed lectures, assignments, etc.
-    const progress = Math.floor(Math.random() * 100); // Mock progress
-    
-    res.json({ progress });
-  } catch (error) {
-    console.error('Error fetching course progress:', error);
-    res.status(500).json({ message: 'Error fetching progress' });
+router.get('/:id/progress', auth, catchAsync(async (req, res, next) => {
+  const cacheKey = `user:${req.user._id}:course:${req.params.id}:progress`;
+  
+  const cachedProgress = await cache.get(cacheKey);
+  if (cachedProgress) {
+    return res.json(cachedProgress);
   }
-});
+  
+  const course = await Course.findById(req.params.id);
+  
+  if (!course) {
+    return next(new AppError('Course not found', 404));
+  }
+  
+  if (!course.students.includes(req.user._id)) {
+    return next(new AppError('You must be enrolled in this course to view progress', 403));
+  }
+  
+  const progress = Math.floor(Math.random() * 100);
+  
+  const result = { progress };
+  
+  await cache.set(cacheKey, result, 300);
+  
+  res.json(result);
+}));
 
-// rate a course
-router.post('/:id/rate', auth, async (req,res) => {
-  try {
-    const { rating, review } = req.body;
-    const course = await Course.findById(req.params.id);
-    
-    if(!course) return res.status(404).json({ message: 'Course not found' });
-    
-    // Check if user is enrolled
-    if(!course.students.includes(req.user._id)) {
-      return res.status(403).json({ message: 'Must be enrolled to rate this course' });
-    }
-    
-    // Check if user already rated
-    const existingRating = course.ratings.find(r => r.user.toString() === req.user._id.toString());
-    if (existingRating) {
-      return res.status(400).json({ message: 'You have already rated this course' });
-    }
-    
-    // Add rating
-    course.ratings.push({
-      user: req.user._id,
-      rating: rating,
-      review: review
-    });
-    
-    // Calculate new average rating
-    course.calculateAverageRating();
-    await course.save();
-    
-    res.json({ message: 'Rating submitted successfully', averageRating: course.averageRating });
-  } catch (error) {
-    console.error('Error rating course:', error);
-    res.status(500).json({ message: 'Error submitting rating' });
+router.post('/:id/rate', auth, catchAsync(async (req, res, next) => {
+  const { rating, review } = req.body;
+  
+  if (!rating || rating < 1 || rating > 5) {
+    return next(new AppError('Rating must be between 1 and 5', 400));
   }
-});
+  
+  const course = await Course.findById(req.params.id);
+  
+  if (!course) {
+    return next(new AppError('Course not found', 404));
+  }
+  
+  if (!course.students.includes(req.user._id)) {
+    return next(new AppError('You must be enrolled in this course to rate it', 403));
+  }
+  
+  const existingRating = course.ratings.find(r => r.user.toString() === req.user._id.toString());
+  if (existingRating) {
+    return next(new AppError('You have already rated this course', 400));
+  }
+  
+  course.ratings.push({
+    user: req.user._id,
+    rating: rating,
+    review: review
+  });
+  
+  course.calculateAverageRating();
+  await course.save();
+  
+  await cache.del(`course:${req.params.id}`);
+  await cache.del(`course:${req.params.id}:stats`);
+  await cache.delPattern('courses:*');
+  
+  res.json({ 
+    message: 'Rating submitted successfully', 
+    averageRating: course.averageRating,
+    totalRatings: course.totalRatings
+  });
+}));
 
-// get course ratings
-router.get('/:id/ratings', auth, async (req,res) => {
-  try {
-    const course = await Course.findById(req.params.id)
-      .populate('ratings.user', 'name email')
-      .select('ratings averageRating totalRatings');
-    
-    if(!course) return res.status(404).json({ message: 'Course not found' });
-    
-    res.json({
-      ratings: course.ratings,
-      averageRating: course.averageRating,
-      totalRatings: course.totalRatings
-    });
-  } catch (error) {
-    console.error('Error fetching course ratings:', error);
-    res.status(500).json({ message: 'Error fetching ratings' });
+router.get('/:id/ratings', auth, catchAsync(async (req, res, next) => {
+  const cacheKey = `course:${req.params.id}:ratings`;
+  
+  const cachedRatings = await cache.get(cacheKey);
+  if (cachedRatings) {
+    return res.json(cachedRatings);
   }
-});
+  
+  const course = await Course.findById(req.params.id)
+    .populate('ratings.user', 'name email')
+    .select('ratings averageRating totalRatings')
+    .lean();
+  
+  if (!course) {
+    return next(new AppError('Course not found', 404));
+  }
+  
+  const result = {
+    ratings: course.ratings,
+    averageRating: course.averageRating,
+    totalRatings: course.totalRatings
+  };
+  
+  await cache.set(cacheKey, result, 600);
+  
+  res.json(result);
+}));
 
 module.exports = router;

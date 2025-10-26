@@ -20,7 +20,15 @@ const courseSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now }
 });
 
-// Calculate average rating when ratings change
+courseSchema.index({ title: 'text', description: 'text' });
+courseSchema.index({ instructor: 1 });
+courseSchema.index({ category: 1 });
+courseSchema.index({ level: 1 });
+courseSchema.index({ averageRating: -1 });
+courseSchema.index({ createdAt: -1 });
+courseSchema.index({ students: 1 });
+courseSchema.index({ price: 1 });
+
 courseSchema.methods.calculateAverageRating = function() {
   if (this.ratings.length === 0) {
     this.averageRating = 0;

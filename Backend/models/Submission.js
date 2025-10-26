@@ -9,4 +9,9 @@ const submissionSchema = new mongoose.Schema({
   feedback: String
 });
 
+submissionSchema.index({ assignment: 1 });
+submissionSchema.index({ student: 1 });
+submissionSchema.index({ submittedAt: -1 });
+submissionSchema.index({ assignment: 1, student: 1 }, { unique: true });
+
 module.exports = mongoose.model('Submission', submissionSchema);

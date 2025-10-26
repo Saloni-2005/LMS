@@ -15,7 +15,6 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-// upload lecture
 router.post('/:courseId', auth, permit('instructor'), upload.single('video'), async (req,res) => {
   const course = await Course.findById(req.params.courseId);
   if(!course) return res.status(404).json({ message: 'Course not found' });
@@ -31,7 +30,6 @@ router.post('/:courseId', auth, permit('instructor'), upload.single('video'), as
   res.json(lecture);
 });
 
-// list by course
 router.get('/course/:courseId', auth, async (req,res) => {
   const lectures = await Lecture.find({ course: req.params.courseId }).sort({ uploadedAt: 1 });
   res.json(lectures);

@@ -13,14 +13,12 @@ const discussionSchema = new mongoose.Schema({
 });
 const Discussion = mongoose.model('Discussion', discussionSchema);
 
-// post
 router.post('/:courseId', auth, async (req,res) => {
   const d = new Discussion({ course: req.params.courseId, user: req.user._id, message: req.body.message });
   await d.save();
   res.json(d);
 });
 
-// get
 router.get('/:courseId', auth, async (req,res) => {
   const list = await Discussion.find({ course: req.params.courseId }).populate('user','name').sort({ createdAt: 1 });
   res.json(list);
