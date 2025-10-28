@@ -256,11 +256,22 @@ export default function Submissions() {
                   </div>
 
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center">
+                    {/* <div className="flex items-center">
                       {submission.filePath ? (
-                        <div className="flex items-center text-blue-600">
-                          <i className="fas fa-file mr-2"></i>
-                          <span className="font-medium">File submitted</span>
+                        <div className="flex items-center">
+                          <a 
+                            href={`${import.meta.env.VITE_API_URL}/${submission.filePath}`}
+                            target="_blank"
+                            rel="noopener noreferrer" 
+                            className="flex items-center text-blue-600 hover:text-blue-700 transition-colors"
+                            download
+                          >
+                            <i className="fas fa-download mr-2"></i>
+                            <span className="font-medium">Download Submission</span>
+                          </a>
+                          <span className="ml-2 text-sm text-gray-500">
+                            ({submission.filePath.split('/').pop()})
+                          </span>
                         </div>
                       ) : (
                         <div className="flex items-center text-gray-500">
@@ -268,7 +279,7 @@ export default function Submissions() {
                           <span>No file submitted</span>
                         </div>
                       )}
-                    </div>
+                    </div> */}
 
                     <div className="flex gap-3">
                       <button
