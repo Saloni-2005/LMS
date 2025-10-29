@@ -53,6 +53,33 @@ export default function Submissions() {
     }
   };
 
+	const getFileNameFromPath = (path) => {
+		if (!path) return 'submission-file';
+		const parts = path.split('/');
+		return parts[parts.length - 1] || 'submission-file';
+	};
+
+	const handleDownload = async (filePath) => {
+		try {
+			if (!filePath) return;
+			const url = `${API_BASE}/${filePath}`;
+			const response = await fetch(url, { credentials: 'include' });
+			if (!response.ok) throw new Error('Network response was not ok');
+			const blob = await response.blob();
+			const downloadUrl = URL.createObjectURL(blob);
+			const link = document.createElement('a');
+			link.href = downloadUrl;
+			link.download = getFileNameFromPath(filePath);
+			document.body.appendChild(link);
+			link.click();
+			URL.revokeObjectURL(downloadUrl);
+			link.remove();
+		} catch (e) {
+			console.error('Error downloading file:', e);
+			alert('Failed to download file.');
+		}
+	};
+
   useEffect(() => {
     fetchSubmissions();
   }, []);
@@ -250,18 +277,15 @@ export default function Submissions() {
                       </p>
                     </div>
                     <div className="flex gap-3">
-                      {submission.filePath ? (
-                        <a
-                          href={`${API_BASE}/${submission.filePath}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
-                          download
-                        >
-                          <i className="fas fa-download mr-2"></i>
-                          <span>Download File</span>
-                        </a>
-                      ) : (
+						{submission.filePath ? (
+							<button
+								onClick={() => handleDownload(submission.filePath)}
+								className="flex items-center bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
+							>
+								<i className="fas fa-download mr-2"></i>
+								<span>Download File</span>
+							</button>
+						) : (
                         <div className="text-red-600 flex items-center">
                           <i className="fas fa-exclamation-circle mr-2"></i>
                           No file submitted
