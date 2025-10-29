@@ -7,6 +7,8 @@ import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import Courses from './pages/Courses';
 import MyCourses from './pages/MyCourses';
+import InstructorCourses from './pages/InstructorCourses';
+import InstructorAssignments from './pages/InstructorAssignments';
 import Assignments from './pages/Assignments';
 import Certificates from './pages/Certificates';
 import Submissions from './pages/Submissions';
@@ -17,6 +19,7 @@ import UploadLecture from './pages/UploadLecture';
 import CreateAssignment from './pages/CreateAssignment';
 import SubmitAssignment from './pages/SubmitAssignment';
 import AdminPanel from './pages/AdminPanel';
+import InstructorStudents from './pages/InstructorStudents';
 
 const PrivateRoute = ({ children, roles = [] }) => {
   const { user } = useAuth();
@@ -35,6 +38,8 @@ export default function App(){
           <Route path="/" element={<PrivateRoute><Dashboard/></PrivateRoute>} />
           <Route path="/courses" element={<PrivateRoute><Courses/></PrivateRoute>} />
           <Route path="/my-courses" element={<PrivateRoute roles={['student']}><MyCourses/></PrivateRoute>} />
+          <Route path="/instructor-courses" element={<PrivateRoute roles={['instructor']}><InstructorCourses/></PrivateRoute>} />
+          <Route path="/instructor-assignments" element={<PrivateRoute roles={['instructor']}><InstructorAssignments/></PrivateRoute>} />
           <Route path="/assignments" element={<PrivateRoute roles={['student']}><Assignments/></PrivateRoute>} />
           <Route path="/certificates" element={<PrivateRoute roles={['student']}><Certificates/></PrivateRoute>} />
           <Route path="/submissions" element={<PrivateRoute roles={['instructor']}><Submissions/></PrivateRoute>} />
@@ -45,6 +50,7 @@ export default function App(){
           <Route path="/create-assignment/:courseId" element={<PrivateRoute roles={['instructor']}><CreateAssignment/></PrivateRoute>} />
           <Route path="/submit-assignment/:assignmentId" element={<PrivateRoute roles={['student']}><SubmitAssignment/></PrivateRoute>} />
           <Route path="/admin" element={<PrivateRoute roles={['admin']}><AdminPanel/></PrivateRoute>} />
+          <Route path="/instructor-students" element={<PrivateRoute roles={['instructor']}><InstructorStudents/></PrivateRoute>} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

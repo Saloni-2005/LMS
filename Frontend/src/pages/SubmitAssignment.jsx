@@ -32,8 +32,7 @@ export default function SubmitAssignment(){
     const fd = new FormData();
     fd.append('file', file);
     try {
-      const res = await API.post(`/assignments/submit/${id}`, fd, { headers: { 'Content-Type': 'multipart/form-data' }});
-      console.log('Submission response:', res.data);
+  const res = await API.post(`/assignments/submit/${id}`, fd, { headers: { 'Content-Type': 'multipart/form-data' }});
       
       if (res.data.certificate) {
         alert(`Assignment submitted successfully!\nCertificate Number: ${res.data.certificate.certificateNumber}\nCertificate issued on: ${new Date(res.data.certificate.issuedAt).toLocaleDateString()}`);

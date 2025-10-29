@@ -84,6 +84,19 @@ router.get('/', auth, catchAsync(async (req, res, next) => {
   res.json(result);
 }));
 
+router.get('/mine', auth, permit('instructor','admin'), catchAsync(async (req, res, next) => {
+  const cacheKey = `user:${req.user._id}:courses:created`;
+  const cached = await cache.get(cacheKey);
+  if (cached) return res.json(cached);
+
+  const courses = await Course.find({ instructor: req.user._id })
+    .populate('instructor','name email')
+    .lean();
+
+  await cache.set(cacheKey, courses, 300);
+  res.json(courses);
+}));
+
 router.get('/:id', auth, catchAsync(async (req, res, next) => {
   const cacheKey = `course:${req.params.id}`;
   

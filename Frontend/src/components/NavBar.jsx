@@ -34,9 +34,14 @@ export default function NavBar(){
                 </Link>
               )}
               {user?.role === 'instructor' && (
-                <Link to="/create-course" className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors">
-                  <i className="fas fa-plus mr-2"></i>Create Course
-                </Link>
+                <>
+                  <Link to="/instructor-courses" className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors">
+                    <i className="fas fa-book-open mr-2"></i>My Courses
+                  </Link>
+                  <Link to="/create-course" className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors">
+                    <i className="fas fa-plus mr-2"></i>Create Course
+                  </Link>
+                </>
               )}
               {user?.role === 'admin' && (
                 <Link to="/admin" className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors">

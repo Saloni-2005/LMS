@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import API from '../api/axios';
 import NavBar from '../components/NavBar';
 
@@ -7,18 +7,45 @@ export default function Submissions() {
   const [submissions, setSubmissions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedSubmission, setSelectedSubmission] = useState(null);
+  const { search } = useLocation();
+  const assignmentId = new URLSearchParams(search).get('assignment');
   const [gradingModal, setGradingModal] = useState(false);
   const [grade, setGrade] = useState('');
   const [feedback, setFeedback] = useState('');
   const [grading, setGrading] = useState(false);
   const [filter, setFilter] = useState('all');
   const navigate = useNavigate();
+  // derive backend origin from API baseURL (e.g. http://localhost:5000/api -> http://localhost:5000)
+  const API_BASE = (API.defaults?.baseURL || import.meta.env.VITE_API_URL || '').replace(/\/api\/?$/, '');
 
   const fetchSubmissions = async () => {
     try {
       setLoading(true);
-      const res = await API.get('/assignments/instructor/submissions');
-      setSubmissions(res.data);
+      let endpoint;
+      let response;
+      
+      if (!assignmentId) {
+        alert('No assignment selected');
+        navigate('/instructor-assignments');
+        return;
+      }
+
+      endpoint = `/assignments/${assignmentId}/submissions`;
+      const res = await API.get(endpoint);
+      
+      // Store both assignment details and submissions
+      const processedSubmissions = res.data.submissions.map(submission => ({
+        id: submission.id,
+        student: submission.student,
+        filePath: submission.filePath,
+        submittedAt: submission.submittedAt,
+        grade: submission.grade,
+        feedback: submission.feedback,
+        isGraded: submission.isGraded,
+        isLate: new Date(submission.submittedAt) > new Date(res.data.assignment.dueDate)
+      }));
+      
+      setSubmissions(processedSubmissions);
     } catch (err) {
       console.error('Error fetching submissions:', err);
     } finally {
@@ -73,14 +100,6 @@ export default function Submissions() {
       hour: '2-digit',
       minute: '2-digit'
     });
-  };
-
-  const getGradeColor = (grade) => {
-    if (grade >= 90) return 'text-green-600 bg-green-100';
-    if (grade >= 80) return 'text-blue-600 bg-blue-100';
-    if (grade >= 70) return 'text-yellow-600 bg-yellow-100';
-    if (grade >= 60) return 'text-orange-600 bg-orange-100';
-    return 'text-red-600 bg-red-100';
   };
 
   const filteredSubmissions = submissions.filter(submission => {
@@ -221,85 +240,60 @@ export default function Submissions() {
             {filteredSubmissions.map((submission) => (
               <div key={submission.id} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                 <div className="p-6">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex-1">
-                      <div className="flex items-center mb-2">
-                        <h3 className="text-xl font-semibold text-gray-900 mr-3">
-                          {submission.student.name}
-                        </h3>
-                        <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                          submission.isGraded 
-                            ? getGradeColor(submission.grade)
-                            : 'bg-gray-100 text-gray-800'
-                        }`}>
-                          {submission.isGraded ? `${submission.grade}/100` : 'Not Graded'}
-                        </span>
-                        {submission.isLate && (
-                          <span className="ml-2 px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">
-                            Late
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-gray-600 mb-3">
-                        <strong>Assignment:</strong> {submission.assignment.title}
-                      </p>
-                      <p className="text-gray-600 mb-3">
-                        <strong>Course:</strong> {submission.course?.title}
-                      </p>
-                      <div className="flex items-center text-sm text-gray-500">
-                        <i className="fas fa-calendar-alt mr-2"></i>
-                        <span>Submitted: {formatDate(submission.submittedAt)}</span>
-                        <i className="fas fa-clock ml-4 mr-2"></i>
-                        <span>Due: {formatDate(submission.assignment.dueDate)}</span>
-                      </div>
-                    </div>
-                  </div>
-
                   <div className="flex items-center justify-between">
-                    {/* <div className="flex items-center">
+                    <div>
+                      <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                        {submission.student.name}
+                      </h3>
+                      <p className="text-sm text-gray-600">
+                        Submitted: {formatDate(submission.submittedAt)}
+                      </p>
+                    </div>
+                    <div className="flex gap-3">
                       {submission.filePath ? (
-                        <div className="flex items-center">
-                          <a 
-                            href={`${import.meta.env.VITE_API_URL}/${submission.filePath}`}
-                            target="_blank"
-                            rel="noopener noreferrer" 
-                            className="flex items-center text-blue-600 hover:text-blue-700 transition-colors"
-                            download
-                          >
-                            <i className="fas fa-download mr-2"></i>
-                            <span className="font-medium">Download Submission</span>
-                          </a>
-                          <span className="ml-2 text-sm text-gray-500">
-                            ({submission.filePath.split('/').pop()})
-                          </span>
-                        </div>
+                        <a
+                          href={`${API_BASE}/${submission.filePath}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
+                          download
+                        >
+                          <i className="fas fa-download mr-2"></i>
+                          <span>Download File</span>
+                        </a>
                       ) : (
-                        <div className="flex items-center text-gray-500">
+                        <div className="text-red-600 flex items-center">
                           <i className="fas fa-exclamation-circle mr-2"></i>
-                          <span>No file submitted</span>
+                          No file submitted
                         </div>
                       )}
-                    </div> */}
 
-                    <div className="flex gap-3">
                       <button
                         onClick={() => openGradingModal(submission)}
-                        className={`px-4 py-2 rounded-lg text-white font-medium transition-colors ${
-                          submission.isGraded 
-                            ? 'bg-green-600 hover:bg-green-700' 
-                            : 'bg-blue-600 hover:bg-blue-700'
+                        className={`px-4 py-2 rounded-lg text-white transition-colors ${
+                          submission.isGraded ? 'bg-green-600 hover:bg-green-700' : 'bg-yellow-600 hover:bg-yellow-700'
                         }`}
                       >
-                        <i className="fas fa-edit mr-2"></i>
-                        {submission.isGraded ? 'Update Grade' : 'Grade Submission'}
+                        {submission.isGraded ? (
+                          <>
+                            <i className="fas fa-edit mr-2"></i>
+                            Update Grade ({submission.grade}/100)
+                          </>
+                        ) : (
+                          <>
+                            <i className="fas fa-plus mr-2"></i>
+                            Grade Submission
+                          </>
+                        )}
                       </button>
                     </div>
                   </div>
-
                   {submission.feedback && (
-                    <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-                      <h4 className="font-medium text-gray-900 mb-2">Feedback:</h4>
-                      <p className="text-gray-700">{submission.feedback}</p>
+                    <div className="mt-4 px-6 pb-6">
+                      <div className="bg-gray-50 rounded-lg p-4">
+                        <h4 className="font-medium text-gray-900 mb-2">Feedback:</h4>
+                        <p className="text-gray-700">{submission.feedback}</p>
+                      </div>
                     </div>
                   )}
                 </div>

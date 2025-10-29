@@ -14,9 +14,8 @@ export default function Dashboard(){
     try {
       setLoading(true);
       const url = refresh ? '/users/dashboard/stats?refresh=true' : '/users/dashboard/stats';
-      const res = await API.get(url);
-      console.log('Dashboard stats:', res.data);
-      setStats(res.data);
+  const res = await API.get(url);
+  setStats(res.data);
     } catch(err) { 
       console.error(err); 
     } finally {
@@ -227,7 +226,7 @@ export default function Dashboard(){
       {/* Quick Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
         <div 
-          onClick={() => navigate('/courses')}
+          onClick={() => navigate('/instructor-courses')}
           className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 hover:shadow-md hover:border-green-300 cursor-pointer transition-all"
         >
           <div className="flex items-center">
@@ -242,7 +241,7 @@ export default function Dashboard(){
         </div>
         
         <div 
-          onClick={() => navigate('/courses')}
+          onClick={() => navigate('/instructor-assignments')}
           className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 hover:shadow-md hover:border-blue-300 cursor-pointer transition-all"
         >
           <div className="flex items-center">
@@ -257,7 +256,7 @@ export default function Dashboard(){
         </div>
         
         <div 
-          onClick={() => navigate('/courses')}
+          onClick={() => navigate('/instructor-students')}
           className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 hover:shadow-md hover:border-purple-300 cursor-pointer transition-all"
         >
           <div className="flex items-center">
